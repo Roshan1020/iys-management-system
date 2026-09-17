@@ -1,0 +1,136 @@
+# ISKCON Youth Services (IYS) Frontend Architecture & Implementation Plan
+
+Act as a Senior Software Architect specializing in Java, Spring Boot, and modern Frontend engineering to architect and implement the **IYS Management System Web UI** (`iys-frontend`).
+
+---
+
+## 1. Executive Summary & Architecture
+
+The frontend is designed to interface with the modular monolith Spring Boot backend (`iys-backend`), adhering to clean architecture, enterprise security, and role-based access control (RBAC).
+
+### Technology Stack
+- **Framework & Tooling:** React 18 / 19 + TypeScript + Vite (fast HMR, strict type safety, ES modules)
+- **Styling:** Tailwind CSS (spiritual saffron/deep navy theme tokens, glassmorphism, responsive grid)
+- **Server State & Caching:** TanStack React Query (`@tanstack/react-query`) with automatic background refetching and cache invalidation
+- **Routing & Guards:** React Router (`react-router-dom`) with declarative Protected Routes & RBAC permission checks
+- **HTTP Client:** Axios with bidirectional interceptors:
+  - Automatically attaches `Authorization: Bearer <accessToken>`
+  - Handles Spring Boot `ApiResponse<T>` envelope unwrapping (`{ success: true, data: ... }`)
+  - Automatic 401 token refresh queue handling
+- **Icons & UI:** `lucide-react`, headless UI primitives, toast notification system
+
+---
+
+## 2. Directory Structure (`iys-frontend`)
+
+```
+iys-frontend/
+├── index.html
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+├── tailwind.config.js
+├── postcss.config.js
+└── src/
+    ├── main.tsx
+    ├── App.tsx
+    ├── index.css
+    ├── api/
+    │   ├── client.ts              # Axios instance with JWT interceptors & token refresh
+    │   ├── authApi.ts             # Login, Register, Refresh, Logout, ChangePassword
+    │   ├── devoteeApi.ts          # Devotee list, CRUD, Student/Professional/Alumni profiles
+    │   ├── centreApi.ts           # Centres list, create, update, delete
+    │   └── userApi.ts             # Users list, status update, assign/revoke roles, me
+    ├── types/
+    │   ├── api.ts                 # ApiResponse<T>, PageResponse<T>, ApiError
+    │   ├── auth.ts                # LoginRequest, RegisterRequest, TokenResponse, UserPrincipal
+    │   ├── devotee.ts             # DevoteeSummaryResponse, DevoteeResponse, ProfileType
+    │   ├── centre.ts              # CentreResponse, CreateCentreRequest
+    │   └── user.ts                # UserResponse, Role, Permission, UserStatus
+    ├── context/
+    │   └── AuthContext.tsx        # Session state, login/logout actions, current user & centre
+    ├── hooks/
+    │   ├── useAuth.ts             # Hook for authentication state & actions
+    │   ├── useDevotees.ts         # React Query hooks for devotees
+    │   ├── useCentres.ts          # React Query hooks for centres
+    │   └── useUsers.ts            # React Query hooks for user & role management
+    ├── components/
+    │   ├── common/
+    │   │   ├── Button.tsx
+    │   │   ├── Input.tsx
+    │   │   ├── Modal.tsx
+    │   │   ├── Badge.tsx
+    │   │   ├── Toast.tsx
+    │   │   └── LoadingSpinner.tsx
+    │   ├── layout/
+    │   │   ├── AppLayout.tsx      # Sidebar + Topbar + Content area
+    │   │   ├── Sidebar.tsx        # Dynamic navigation based on user roles
+    │   │   └── Topbar.tsx         # User profile dropdown, centre switcher, logout
+    │   └── guards/
+    │       ├── ProtectedRoute.tsx # Redirects unauthenticated users to /login
+    │       └── RoleGuard.tsx      # Hides or blocks routes without required roles
+    └── pages/
+        ├── auth/
+        │   ├── LoginPage.tsx      # Polished split login with spiritual theme & demo quick-fill
+        │   └── RegisterPage.tsx   # Multi-field devotee registration
+        ├── dashboard/
+        │   └── DashboardPage.tsx  # Overview KPI counters, quick shortcuts, recent registrations
+        ├── devotees/
+        │   ├── DevoteesListPage.tsx    # Search, filter by centre/profile type, table & grid view
+        │   ├── DevoteeDetailPage.tsx  # Profile viewer with student/professional/alumni tabs
+        │   └── CreateDevoteeModal.tsx # New devotee creation dialog
+        ├── centres/
+        │   └── CentresListPage.tsx     # Super Admin centre management & creation
+        ├── users/
+        │   └── UsersListPage.tsx       # User approval, status toggle, RBAC role assignment
+        └── profile/
+            └── ProfilePage.tsx         # User details, centre info, password change
+```
+
+---
+
+## 3. Backend Harmony & Minor Fixes
+
+### [MODIFY] [TokenResponse.java](file:///d:/MyProject_2025/IYS_Managment_System/iys-backend/src/main/java/org/iskcon/iys/modules/identity/dto/TokenResponse.java)
+- Add `private String refreshToken;` to `TokenResponse` and populate it in `AuthServiceImpl.java` and `UserServiceImpl.java` so the frontend can receive and securely rotate refresh tokens.
+
+---
+
+## 4. Proposed Changes by Component
+
+### Component 1: Project Scaffolding & Setup
+- Initialize Vite + React 18/19 + TypeScript in `iys-frontend`
+- Configure `tailwind.config.js` with bespoke saffron spiritual colors (`#e67e22`, `#d35400`, deep indigo/slate dark cards)
+- Configure `vite.config.ts` with dev server proxy to `http://localhost:8080` for smooth local development.
+
+### Component 2: API Layer & Type Definitions
+- Types matching backend DTOs: `ApiResponse<T>`, `TokenResponse`, `UserResponse`, `DevoteeResponse`, `CentreResponse`.
+- Axios client configured with:
+  - Base URL `/api/v1`
+  - Request interceptor: injects bearer token from `localStorage`
+  - Response interceptor: automatically handles 401 expiration using `/api/v1/auth/refresh`.
+
+### Component 3: Authentication & Protected Routing
+- `AuthContext`: stores current access token, user metadata, active centre.
+- `ProtectedRoute`: guards dashboard routes.
+- `LoginPage`: rich split-view UI featuring ISKCON youth theme, form validation, error handling.
+- `RegisterPage`: devotee signup with centre dropdown.
+
+### Component 4: Dashboard & Core Management Modules
+- **Dashboard**: KPI stats cards (Total Devotees, Centres, Active Users), Hare Krishna devotee greeting banner, quick action buttons.
+- **Devotee Management**: Table & filterable card grid (search by name, filter by profile type `STUDENT`, `PROFESSIONAL`, `ALUMNI`). Profile modal with profile-type tabs.
+- **Centre Management**: Table of centres with status, city, country, short code, and modal to add new centre.
+- **User & RBAC Management**: Table of users, active status toggle, role assign/revoke modal with `SUPER_ADMIN`, `CENTRE_ADMIN`, `COUNSELLOR`, etc.
+
+---
+
+## 5. Verification Plan
+
+### Automated Verification
+- Verify build with TypeScript compiler: `npm run build` (zero type errors)
+- Verify linting and asset generation.
+
+### Manual / End-to-End Verification
+- Start frontend dev server on `http://localhost:5173`.
+- Test Login flow with credentials or backend integration.
+- Test Devotee directory filters, Centre list, and Role-Based views.

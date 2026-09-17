@@ -1,0 +1,108 @@
+spring:
+  application:
+    name: iys-backend
+
+  # ── Datasource ────────────────────────────────────────────────
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/iys_db}
+    username: ${SPRING_DATASOURCE_USERNAME:iys_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:iys_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: IysHikariPool
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
+
+  # ── JPA / Hibernate ───────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: validate         # Flyway owns the schema; Hibernate only validates
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 25
+          order_inserts: true
+          order_updates: true
+        generate_statistics: false
+
+  # ── Flyway ────────────────────────────────────────────────────
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    validate-on-migrate: true
+    out-of-order: false
+    table: flyway_schema_history
+
+  # ── Redis ─────────────────────────────────────────────────────
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
+      password: ${SPRING_REDIS_PASSWORD:iys_redis_pass}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+
+  # ── Jackson ───────────────────────────────────────────────────
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    time-zone: UTC
+
+# ── Server ────────────────────────────────────────────────────
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never   # never expose stack traces in production
+
+# ── Actuator ──────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ── OpenAPI / Swagger ─────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
+
+# ── IYS Application Properties ────────────────────────────────
+iys:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:iys-super-secret-key-must-be-at-least-256-bits-long-for-hs256}
+      access-token-expiry-ms: ${JWT_ACCESS_EXPIRY_MS:900000}         # 15 minutes
+      refresh-token-expiry-ms: ${JWT_REFRESH_EXPIRY_MS:604800000}    # 7 days
+    cors:
+      allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+  redis:
+    token-blacklist-prefix: "iys:blacklist:"
+    token-blacklist-ttl-seconds: 900                                   # Match access token TTL

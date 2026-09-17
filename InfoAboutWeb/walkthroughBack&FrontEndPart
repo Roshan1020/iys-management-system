@@ -1,0 +1,85 @@
+# IYS Management System Frontend Walkthrough
+
+## Summary of Changes
+
+We built the complete frontend web application for the **ISKCON Youth Services (IYS) Management Platform** in `iys-frontend` adhering to enterprise clean architecture, seamless Spring Boot integration, and rich spiritual aesthetics.
+
+### Architecture & Tech Stack
+- **Framework:** React 19 + TypeScript + Vite 8
+- **Styling:** Tailwind CSS v4 with bespoke spiritual saffron & slate gradients, glassmorphism, responsive cards, and clean typography (`Plus Jakarta Sans` & `Outfit`).
+- **Server State Management:** TanStack React Query (`@tanstack/react-query`) with automatic background cache synchronization.
+- **Client Routing & Security:** `react-router-dom` with `ProtectedRoute` and `RoleGuard` RBAC enforcement.
+- **HTTP Client:** Axios client with automated JWT Bearer injection, Spring Boot `ApiResponse<T>` envelope unwrapping, and 401 token refresh queue.
+
+---
+
+## Key Modules Created
+
+### 1. Authentication & Security
+- [LoginPage.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/pages/auth/LoginPage.tsx): Split layout featuring spiritual artwork, Prabhupada quote, email/password validation, demo admin autofill, and error alerts.
+- [RegisterPage.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/pages/auth/RegisterPage.tsx): Devotee registration with dynamic Centre dropdown, legal name, initiated name, phone, and password.
+- [AuthContext.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/context/AuthContext.tsx): Manages user session, JWT storage, role checks (`hasRole`, `hasAnyRole`), and multi-centre context switching.
+- [TokenResponse.java](file:///d:/MyProject_2025/IYS_Managment_System/iys-backend/src/main/java/org/iskcon/iys/modules/identity/dto/TokenResponse.java) & [AuthServiceImpl.java](file:///d:/MyProject_2025/IYS_Managment_System/iys-backend/src/main/java/org/iskcon/iys/modules/identity/application/AuthServiceImpl.java): Updated backend to return `refreshToken` in `TokenResponse` for seamless rotation.
+
+### 2. Dashboard
+- [DashboardPage.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/pages/dashboard/DashboardPage.tsx):
+  - Hare Krishna devotee greeting banner with active centre badge.
+  - KPI metric cards: Total Devotees, Active Centres, User Identities, and Centre Shortcode.
+  - Youth demographic breakdown: Students, Working Professionals, Alumni, and General members.
+  - Roadmap cards previewing upcoming phases (Sadhana Tracker, Mentor Counselling, Events).
+
+### 3. Devotee Directory & Sub-Profiles
+- [DevoteesListPage.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/pages/devotees/DevoteesListPage.tsx):
+  - Filter tabs: All, Students, Professionals, Alumni, General.
+  - Real-time search by devotee name.
+  - Devotee table with profile badges, initiation status, city, and action buttons.
+- [CreateDevoteeModal.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/pages/devotees/CreateDevoteeModal.tsx): Dialog to create devotee records in the active centre.
+- [DevoteeDetailModal.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/pages/devotees/DevoteeDetailModal.tsx):
+  - Overview tab (spiritual master, initiation date, contact, notes).
+  - Student profile tab (college, degree, branch, year, hostel status) with live upsert.
+  - Professional profile tab (company, designation, domain, experience, work city) with live upsert.
+  - Alumni profile tab (highest degree, current organization, mentorship availability) with live upsert.
+
+### 4. Multi-Centre Management
+- [CentresListPage.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/pages/centres/CentresListPage.tsx): Card grid of global youth centre chapters with status, location, and one-click active context switcher.
+- [CreateCentreModal.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/pages/centres/CreateCentreModal.tsx): Form for Super Admins to establish new youth centres.
+
+### 5. Identity & RBAC Management
+- [UsersListPage.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/pages/users/UsersListPage.tsx): Centre user accounts table, account status dropdown (`ACTIVE`, `INACTIVE`, `SUSPENDED`), and role pills.
+- [AssignRoleModal.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/pages/users/AssignRoleModal.tsx): RBAC role allocator (`SUPER_ADMIN`, `CENTRE_ADMIN`, `COUNSELLOR`, `MENTOR`, `YOUTH_MEMBER`).
+- [ProfilePage.tsx](file:///d:/MyProject_2025/IYS_Managment_System/iys-frontend/src/pages/profile/ProfilePage.tsx): User profile info and secure change-password form.
+
+---
+
+## Verification Results
+
+### Production Build
+- Command: `npm run build` inside `iys-frontend`
+- Result: **SUCCESS** (Exit code 0, 0 TypeScript errors, bundle generated in `dist/`).
+- Backend Build: `mvn test-compile` inside `iys-backend` passed with **BUILD SUCCESS**.
+
+---
+
+## How to Run the System
+
+### 1. Run Docker Containers (PostgreSQL & Redis)
+In PowerShell:
+```powershell
+cd d:\MyProject_2025\IYS_Managment_System\iys-backend
+docker-compose up -d
+```
+
+### 2. Start the Spring Boot Backend
+```powershell
+cd d:\MyProject_2025\IYS_Managment_System\iys-backend
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+### 3. Start the React Frontend
+In a new terminal:
+```powershell
+cd d:\MyProject_2025\IYS_Managment_System\iys-frontend
+npm run dev
+```
+
+Open your browser at `http://localhost:5173`.

@@ -1,0 +1,36 @@
+spring:
+  # Use H2 in-memory for unit tests (no Testcontainers needed)
+  datasource:
+    url: jdbc:h2:mem:iys_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+  flyway:
+    enabled: false   # Let Hibernate manage schema in unit tests
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+
+iys:
+  security:
+    jwt:
+      secret: dGVzdC1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLW9ubHktMzJjaA==
+      access-token-expiry-ms: 900000
+      refresh-token-expiry-ms: 604800000
+    cors:
+      allowed-origins: http://localhost:5173
+  redis:
+    token-blacklist-prefix: "iys:test:blacklist:"
+    token-blacklist-ttl-seconds: 900
+
+logging:
+  level:
+    org.iskcon.iys: WARN
+    org.springframework.security: WARN

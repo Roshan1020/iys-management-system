@@ -1,0 +1,37 @@
+spring:
+  # Dev profile: verbose SQL, relaxed validation
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: false
+
+  # Dev profile: create-drop or validate (Flyway handles schema)
+  flyway:
+    enabled: true
+
+logging:
+  level:
+    org.iskcon.iys: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.flywaydb: INFO
+
+# Dev: expose all actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+iys:
+  security:
+    jwt:
+      secret: dev-only-secret-key-do-not-use-in-production-32chars
+      access-token-expiry-ms: 3600000    # 1 hour in dev (easier testing)
+      refresh-token-expiry-ms: 604800000

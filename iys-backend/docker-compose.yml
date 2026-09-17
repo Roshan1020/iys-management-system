@@ -1,0 +1,59 @@
+version: '3.9'
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: iys_postgres
+    environment:
+      POSTGRES_DB: iys_db
+      POSTGRES_USER: iys_user
+      POSTGRES_PASSWORD: iys_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - iys_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iys_user -d iys_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: iys_redis
+    command: redis-server --requirepass iys_redis_pass
+    ports:
+      - "6379:6379"
+    volumes:
+      - iys_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "iys_redis_pass", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Uncomment after first build to run the application in Docker
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: iys_backend
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: dev
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/iys_db
+  #     SPRING_DATASOURCE_USERNAME: iys_user
+  #     SPRING_DATASOURCE_PASSWORD: iys_pass
+  #     SPRING_REDIS_HOST: redis
+  #     SPRING_REDIS_PASSWORD: iys_redis_pass
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+
+volumes:
+  iys_postgres_data:
+  iys_redis_data:
