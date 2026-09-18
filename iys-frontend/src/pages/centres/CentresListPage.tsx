@@ -8,11 +8,17 @@ import { CreateCentreModal } from './CreateCentreModal';
 import { Building2, Plus, MapPin, Mail, Phone, CheckCircle } from 'lucide-react';
 
 export const CentresListPage: React.FC = () => {
-  const { hasRole, activeCentreId, setActiveCentreId } = useAuth();
+  const { user, hasRole, activeCentreId, setActiveCentreId } = useAuth();
+  const isSuperAdmin = hasRole('SUPER_ADMIN');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { data: pageData, isLoading, isError } = useCentres(false, 0, 50);
-  const centres = pageData?.content || [];
+  const allCentres = pageData?.content || [];
+  
+  // For non-super admins (like CENTRE_ADMIN), only belonged centre is visible
+  const centres = isSuperAdmin
+    ? allCentres
+    : allCentres.filter((c) => c.id === (user?.centreId || activeCentreId));
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -21,15 +27,19 @@ export const CentresListPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
             <Building2 className="w-4 h-4" />
-            <span>Multi-Centre Administration</span>
+            <span>{isSuperAdmin ? 'Multi-Centre Administration' : 'Assigned Centre Profile'}</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 font-heading">Centre Locations</h1>
+          <h1 className="text-2xl font-bold text-slate-900 font-heading">
+            {isSuperAdmin ? 'Centre Locations' : 'My Centre'}
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Manage global ISKCON youth centre chapters and configure active operational contexts.
+            {isSuperAdmin
+              ? 'Manage global ISKCON youth centre chapters and configure active operational contexts.'
+              : 'Operational details and configuration for your assigned youth centre chapter.'}
           </p>
         </div>
 
-        {hasRole('SUPER_ADMIN') && (
+        {isSuperAdmin && (
           <Button
             variant="primary"
             size="md"
@@ -53,9 +63,13 @@ export const CentresListPage: React.FC = () => {
       ) : centres.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-3xl border border-slate-200/80">
           <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-sm font-bold text-slate-800">No Centres Registered Yet</h3>
+          <h3 className="text-sm font-bold text-slate-800">
+            {isSuperAdmin ? 'No Centres Registered Yet' : 'No Assigned Centre Found'}
+          </h3>
           <p className="text-xs text-slate-500 mt-1">
-            Click "Add New Centre" to register the first youth centre.
+            {isSuperAdmin
+              ? 'Click "Add New Centre" to register the first youth centre.'
+              : 'Contact your Super Administrator to link your account to an active youth centre.'}
           </p>
         </div>
       ) : (
@@ -122,13 +136,20 @@ export const CentresListPage: React.FC = () => {
                   <span className="text-[10px] text-slate-400 font-mono">
                     ID: {centre.id.substring(0, 8)}...
                   </span>
-                  <Button
-                    variant={isSelected ? 'secondary' : 'outline'}
-                    size="sm"
-                    onClick={() => setActiveCentreId(centre.id)}
-                  >
-                    {isSelected ? 'Selected' : 'Switch to Centre'}
-                  </Button>
+                  {isSuperAdmin ? (
+                    <Button
+                      variant={isSelected ? 'secondary' : 'outline'}
+                      size="sm"
+                      onClick={() => setActiveCentreId(centre.id)}
+                    >
+                      {isSelected ? 'Selected' : 'Switch to Centre'}
+                    </Button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      Assigned Centre
+                    </span>
+                  )}
                 </div>
               </div>
             );

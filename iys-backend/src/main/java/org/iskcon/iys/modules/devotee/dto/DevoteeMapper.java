@@ -4,6 +4,10 @@ import org.iskcon.iys.modules.devotee.domain.AlumniProfile;
 import org.iskcon.iys.modules.devotee.domain.DevoteeProfile;
 import org.iskcon.iys.modules.devotee.domain.ProfessionalProfile;
 import org.iskcon.iys.modules.devotee.domain.StudentProfile;
+import org.iskcon.iys.modules.devotee.domain.enums.InitiationStatus;
+import org.iskcon.iys.modules.devotee.domain.enums.ProfileType;
+
+import java.time.LocalDate;
 
 public class DevoteeMapper {
 
@@ -54,22 +58,22 @@ public class DevoteeMapper {
         return DevoteeProfile.builder()
                 .userId(request.userId())
                 .centreId(request.centreId())
-                .legalName(request.legalName())
-                .initiatedName(request.initiatedName())
-                .spiritualMaster(request.spiritualMaster())
-                .profileType(request.profileType())
-                .initiationStatus(request.initiationStatus())
+                .legalName(request.legalName() != null ? request.legalName().trim() : null)
+                .initiatedName(request.initiatedName() != null && !request.initiatedName().trim().isBlank() ? request.initiatedName().trim() : null)
+                .spiritualMaster(request.spiritualMaster() != null && !request.spiritualMaster().trim().isBlank() ? request.spiritualMaster().trim() : null)
+                .profileType(request.profileType() != null ? request.profileType() : ProfileType.OTHER)
+                .initiationStatus(request.initiationStatus() != null ? request.initiationStatus() : InitiationStatus.UNINITIATED)
                 .initiatedDate(request.initiatedDate())
                 .dob(request.dob())
                 .gender(request.gender())
-                .phone(request.phone())
+                .phone(request.phone() != null && !request.phone().trim().isBlank() ? request.phone().trim() : null)
                 .address(request.address())
-                .city(request.city())
+                .city(request.city() != null && !request.city().trim().isBlank() ? request.city().trim() : null)
                 .state(request.state())
                 .pincode(request.pincode())
-                .joinDate(request.joinDate())
+                .joinDate(request.joinDate() != null ? request.joinDate() : LocalDate.now())
                 .isRegular(request.isRegular())
-                .notes(request.notes())
+                .notes(request.notes() != null && !request.notes().trim().isBlank() ? request.notes().trim() : null)
                 .build();
     }
 

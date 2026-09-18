@@ -101,6 +101,46 @@ class DevoteeServiceTest {
     }
 
     @Test
+    void createDevotee_whenCentreIdNull_defaultsToCurrentAdminCentre() {
+        UUID userId = UUID.randomUUID();
+        UUID adminCentreId = UUID.randomUUID();
+        UserPrincipal principal = new UserPrincipal(
+                UUID.randomUUID(), adminCentreId, "admin@test.com", "pass",
+                List.of("CENTRE_ADMIN")
+        );
+        securityUtilsMockedStatic.when(SecurityUtils::getCurrentUser).thenReturn(principal);
+
+        CreateDevoteeRequest req = new CreateDevoteeRequest(userId, null, "Legal Name", null, null, ProfileType.STUDENT, null, null, null, null, null, null, null, null, null, null, false, null);
+        when(devoteeRepository.existsByUserId(userId)).thenReturn(false);
+
+        DevoteeProfile saved = new DevoteeProfile();
+        saved.setId(UUID.randomUUID());
+        saved.setUserId(userId);
+        saved.setCentreId(adminCentreId);
+        saved.setLegalName("Legal Name");
+        when(devoteeRepository.save(any(DevoteeProfile.class))).thenReturn(saved);
+
+        DevoteeResponse response = devoteeService.createDevotee(req);
+
+        assertNotNull(response);
+        assertEquals(adminCentreId, response.getCentreId());
+    }
+
+    @Test
+    void createDevotee_whenInitiatedWithoutInitiatedName_throwsBadRequestException() {
+        UUID userId = UUID.randomUUID();
+        UUID centreId = UUID.randomUUID();
+        CreateDevoteeRequest req = new CreateDevoteeRequest(
+                userId, centreId, "Legal Name", null, null, ProfileType.STUDENT,
+                org.iskcon.iys.modules.devotee.domain.enums.InitiationStatus.FIRST_INITIATED,
+                null, null, null, null, null, null, null, null, null, false, null
+        );
+
+        assertThrows(org.iskcon.iys.shared.exception.BadRequestException.class,
+                () -> devoteeService.createDevotee(req));
+    }
+
+    @Test
     void getDevoteeById_whenExists_returnsDevoteeResponse() {
         UUID id = UUID.randomUUID();
         DevoteeProfile dev = new DevoteeProfile();

@@ -19,8 +19,11 @@ import {
   Calendar,
   CheckCircle2,
   AlertCircle,
+  Lock,
+  ShieldAlert,
 } from 'lucide-react';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { useAuth } from '../../context/AuthContext';
 
 interface DevoteeDetailModalProps {
   devoteeId: string | null;
@@ -33,7 +36,15 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { user, hasRole } = useAuth();
+  const isSuperAdmin = hasRole('SUPER_ADMIN');
+  const isCentreAdmin = hasRole('CENTRE_ADMIN');
+
   const { data: devotee, isLoading } = useDevotee(devoteeId || undefined);
+
+  // CENTRE_ADMIN only has rights to take action on same-centre devotees
+  const isSameCentre = !devotee?.centreId || devotee?.centreId === user?.centreId;
+  const canTakeAction = isSuperAdmin || (isCentreAdmin && isSameCentre);
 
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'STUDENT' | 'PROFESSIONAL' | 'ALUMNI'>('OVERVIEW');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -65,7 +76,7 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
 
   const handleSaveStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!devoteeId) return;
+    if (!devoteeId || !canTakeAction) return;
     try {
       setErrorMessage(null);
       await studentMutation.mutateAsync({
@@ -88,7 +99,7 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
 
   const handleSaveProfessional = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!devoteeId) return;
+    if (!devoteeId || !canTakeAction) return;
     try {
       setErrorMessage(null);
       await profMutation.mutateAsync({
@@ -110,7 +121,7 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
 
   const handleSaveAlumni = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!devoteeId) return;
+    if (!devoteeId || !canTakeAction) return;
     try {
       setErrorMessage(null);
       await alumniMutation.mutateAsync({
@@ -142,6 +153,19 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
         <p className="text-sm text-slate-500 text-center py-6">Devotee record not found.</p>
       ) : (
         <div className="space-y-6">
+          {/* Action Restriction Warning for External Centre Devotees */}
+          {!canTakeAction && (
+            <div className="rounded-2xl bg-amber-50 border border-amber-200/90 p-3.5 text-amber-900 text-xs flex items-center gap-3">
+              <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0" />
+              <div>
+                <p className="font-bold">Read-Only View: Action Rights Restricted</p>
+                <p className="text-[11px] text-amber-700 mt-0.5">
+                  You are viewing a devotee from another centre. As a Centre Administrator, you only have rights to take action on same-centre devotees.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Header Summary */}
           <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80">
             <div className="flex items-center gap-3">
@@ -283,6 +307,7 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
                   placeholder="e.g. COEP Pune"
                   value={collegeName}
                   onChange={(e) => setCollegeName(e.target.value)}
+                  disabled={!canTakeAction}
                   required
                 />
                 <Input
@@ -290,6 +315,7 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
                   placeholder="e.g. B.Tech"
                   value={degree}
                   onChange={(e) => setDegree(e.target.value)}
+                  disabled={!canTakeAction}
                   required
                 />
                 <Input
@@ -297,6 +323,7 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
                   placeholder="e.g. Computer Engineering"
                   value={branch}
                   onChange={(e) => setBranch(e.target.value)}
+                  disabled={!canTakeAction}
                 />
                 <Input
                   label="Graduation Year"
@@ -304,6 +331,7 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
                   placeholder="2026"
                   value={gradYear}
                   onChange={(e) => setGradYear(Number(e.target.value))}
+                  disabled={!canTakeAction}
                 />
                 <Input
                   label="Current Year of Study"
@@ -311,19 +339,28 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
                   placeholder="3"
                   value={currentYear}
                   onChange={(e) => setCurrentYear(Number(e.target.value))}
+                  disabled={!canTakeAction}
                 />
                 <Input
                   label="Hostel / Day Scholar"
                   placeholder="e.g. Campus Hostel Room 204"
                   value={hostel}
                   onChange={(e) => setHostel(e.target.value)}
+                  disabled={!canTakeAction}
                 />
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit" variant="primary" size="md" isLoading={studentMutation.isPending}>
-                  Save Student Profile
-                </Button>
+                {canTakeAction ? (
+                  <Button type="submit" variant="primary" size="md" isLoading={studentMutation.isPending}>
+                    Save Student Profile
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium py-2 px-3.5 bg-slate-100 rounded-xl border border-slate-200">
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Action restricted: Devotee belongs to an external centre</span>
+                  </div>
+                )}
               </div>
             </form>
           )}
@@ -340,6 +377,7 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
                   placeholder="e.g. Infosys Ltd"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
+                  disabled={!canTakeAction}
                   required
                 />
                 <Input
@@ -347,6 +385,7 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
                   placeholder="e.g. Senior Software Engineer"
                   value={designation}
                   onChange={(e) => setDesignation(e.target.value)}
+                  disabled={!canTakeAction}
                   required
                 />
                 <Input
@@ -354,25 +393,35 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
                   placeholder="e.g. Fintech / IT Services"
                   value={industry}
                   onChange={(e) => setIndustry(e.target.value)}
+                  disabled={!canTakeAction}
                 />
                 <Input
                   label="Total Experience (Years)"
                   type="number"
                   value={totalExp}
                   onChange={(e) => setTotalExp(Number(e.target.value))}
+                  disabled={!canTakeAction}
                 />
                 <Input
                   label="Work City"
                   placeholder="e.g. Bengaluru"
                   value={workCity}
                   onChange={(e) => setWorkCity(e.target.value)}
+                  disabled={!canTakeAction}
                 />
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit" variant="primary" size="md" isLoading={profMutation.isPending}>
-                  Save Professional Profile
-                </Button>
+                {canTakeAction ? (
+                  <Button type="submit" variant="primary" size="md" isLoading={profMutation.isPending}>
+                    Save Professional Profile
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium py-2 px-3.5 bg-slate-100 rounded-xl border border-slate-200">
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Action restricted: Devotee belongs to an external centre</span>
+                  </div>
+                )}
               </div>
             </form>
           )}
@@ -389,12 +438,14 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
                   placeholder="e.g. M.Tech / MBA"
                   value={highestDegree}
                   onChange={(e) => setHighestDegree(e.target.value)}
+                  disabled={!canTakeAction}
                 />
                 <Input
                   label="Current Organization"
                   placeholder="e.g. Google / IIT Faculty"
                   value={currentOrg}
                   onChange={(e) => setCurrentOrg(e.target.value)}
+                  disabled={!canTakeAction}
                 />
               </div>
 
@@ -404,7 +455,8 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
                   id="mentorship"
                   checked={mentorshipOffered}
                   onChange={(e) => setMentorshipOffered(e.target.checked)}
-                  className="rounded text-amber-600 focus:ring-amber-500"
+                  disabled={!canTakeAction}
+                  className="rounded text-amber-600 focus:ring-amber-500 disabled:opacity-50"
                 />
                 <label htmlFor="mentorship" className="text-xs text-slate-700 font-medium cursor-pointer">
                   Available to mentor current college youth members
@@ -412,9 +464,16 @@ export const DevoteeDetailModal: React.FC<DevoteeDetailModalProps> = ({
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit" variant="primary" size="md" isLoading={alumniMutation.isPending}>
-                  Save Alumni Profile
-                </Button>
+                {canTakeAction ? (
+                  <Button type="submit" variant="primary" size="md" isLoading={alumniMutation.isPending}>
+                    Save Alumni Profile
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium py-2 px-3.5 bg-slate-100 rounded-xl border border-slate-200">
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Action restricted: Devotee belongs to an external centre</span>
+                  </div>
+                )}
               </div>
             </form>
           )}

@@ -9,10 +9,19 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar, isSidebarOpen }) => {
-  const { user, activeCentreId, setActiveCentreId } = useAuth();
+  const { user, activeCentreId, setActiveCentreId, hasRole } = useAuth();
+  const isSuperAdmin = hasRole('SUPER_ADMIN');
   const { data: centresData } = useCentres(false, 0, 50);
 
-  const activeCentre = centresData?.content?.find((c) => c.id === activeCentreId);
+  // For non-super admins, ensure active centre is always their assigned centre
+  React.useEffect(() => {
+    if (!isSuperAdmin && user?.centreId && activeCentreId !== user.centreId) {
+      setActiveCentreId(user.centreId);
+    }
+  }, [isSuperAdmin, user?.centreId, activeCentreId, setActiveCentreId]);
+
+  const activeCentre = centresData?.content?.find((c) => c.id === (activeCentreId || user?.centreId))
+    || centresData?.content?.[0];
 
   return (
     <header className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
@@ -28,11 +37,11 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar, isSidebarOpen }
           <ChevronRight className={`w-3.5 h-3.5 text-amber-600 transition-transform duration-200 ${isSidebarOpen ? 'rotate-180' : ''}`} />
         </button>
 
-        {/* Centre Selector */}
+        {/* Centre Selector / Assigned Centre Display */}
         <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-amber-900 text-xs font-medium min-w-0">
           <Building2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
           <span className="hidden sm:inline font-semibold text-slate-700 shrink-0">Centre:</span>
-          {centresData?.content && centresData.content.length > 0 ? (
+          {isSuperAdmin && centresData?.content && centresData.content.length > 1 ? (
             <select
               value={activeCentreId || ''}
               onChange={(e) => setActiveCentreId(e.target.value)}
@@ -45,9 +54,16 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleSidebar, isSidebarOpen }
               ))}
             </select>
           ) : (
-            <span className="font-bold text-amber-800 truncate text-[11px] sm:text-xs">
-              {activeCentre ? `${activeCentre.shortCode} - ${activeCentre.name}` : 'Default Centre'}
-            </span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-bold text-amber-900 truncate text-[11px] sm:text-xs">
+                {activeCentre ? `${activeCentre.shortCode} - ${activeCentre.name}` : 'Assigned Centre'}
+              </span>
+              {!isSuperAdmin && (
+                <span className="hidden md:inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-200/80 text-amber-800 shrink-0">
+                  Your Centre
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>

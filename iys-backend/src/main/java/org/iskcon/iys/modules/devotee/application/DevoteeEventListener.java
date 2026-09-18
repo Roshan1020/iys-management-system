@@ -22,19 +22,39 @@ public class DevoteeEventListener {
     @EventListener
     public void onUserRegistered(UserRegisteredEvent event) {
         if (!devoteeRepository.existsByUserId(event.userId())) {
+            ProfileType profileType = ProfileType.STUDENT;
+            if (event.profileType() != null && !event.profileType().isBlank()) {
+                try {
+                    profileType = ProfileType.valueOf(event.profileType().toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    log.warn("Unknown profileType {} for user {}, defaulting to STUDENT", event.profileType(), event.userId());
+                }
+            }
+
+            InitiationStatus initiationStatus = InitiationStatus.UNINITIATED;
+            if (event.initiationStatus() != null && !event.initiationStatus().isBlank()) {
+                try {
+                    initiationStatus = InitiationStatus.valueOf(event.initiationStatus().toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    log.warn("Unknown initiationStatus {} for user {}, defaulting to UNINITIATED", event.initiationStatus(), event.userId());
+                }
+            }
+
             DevoteeProfile devoteeProfile = DevoteeProfile.builder()
                     .userId(event.userId())
                     .centreId(event.centreId())
                     .legalName(event.legalName() != null && !event.legalName().isBlank() ? event.legalName() : event.email())
                     .initiatedName(event.initiatedName())
                     .phone(event.phone())
-                    .profileType(ProfileType.OTHER)
-                    .initiationStatus(InitiationStatus.UNINITIATED)
+                    .city(event.city())
+                    .profileType(profileType)
+                    .initiationStatus(initiationStatus)
                     .joinDate(LocalDate.now())
                     .isRegular(true)
                     .build();
             devoteeRepository.save(devoteeProfile);
-            log.info("Auto-provisioned DevoteeProfile for user {} via UserRegisteredEvent", event.userId());
+            log.info("Auto-provisioned DevoteeProfile for user {} via UserRegisteredEvent with profileType={}, city={}, initiationStatus={}",
+                    event.userId(), profileType, event.city(), initiationStatus);
         }
     }
 }

@@ -12,5 +12,12 @@ public record RegisterRequest(
         @NotBlank String legalName,
         @NotNull UUID centreId,
         String phone,
-        String initiatedName) {
+        String initiatedName,
+        String profileType,
+        String city,
+        String initiationStatus) {
+
+    public RegisterRequest(String email, String password, String legalName, UUID centreId, String phone, String initiatedName) {
+        this(email, password, legalName, centreId, phone, initiatedName, null, null, null);
+    }
 }

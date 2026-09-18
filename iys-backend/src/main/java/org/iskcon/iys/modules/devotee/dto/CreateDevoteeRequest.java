@@ -13,7 +13,7 @@ import java.util.UUID;
 public record CreateDevoteeRequest(
         UUID userId,
         String email,
-        @NotNull UUID centreId,
+        UUID centreId,
         @NotBlank @Size(max = 150) String legalName,
         String initiatedName,
         String spiritualMaster,

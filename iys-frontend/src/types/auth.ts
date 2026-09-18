@@ -10,6 +10,9 @@ export interface RegisterRequest {
   centreId: string;
   phone?: string;
   initiatedName?: string;
+  profileType?: string;
+  city?: string;
+  initiationStatus?: string;
 }
 
 export interface TokenResponse {

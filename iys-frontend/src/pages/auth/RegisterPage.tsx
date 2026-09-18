@@ -1,10 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useCentres } from '../../hooks/useCentres';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
-import { Mail, Lock, User, Phone, Sparkles, AlertCircle, ArrowRight, Building, CheckCircle2 } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  User,
+  Phone,
+  Sparkles,
+  AlertCircle,
+  ArrowRight,
+  Building,
+  CheckCircle2,
+  GraduationCap,
+  MapPin,
+} from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,14 +23,20 @@ export const RegisterPage: React.FC = () => {
   const queryCentreId = searchParams.get('centreId');
 
   const { register } = useAuth();
-  const { data: centresData, isLoading: centresLoading } = useCentres(false, 0, 50);
 
-  const [legalName, setLegalName] = useState('');
+  // Field states
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [initiatedName, setInitiatedName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [centreId, setCentreId] = useState(queryCentreId || '');
+  const [profileType, setProfileType] = useState('STUDENT');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [customCity, setCustomCity] = useState('');
+  const [initiationStatus, setInitiationStatus] = useState('UNINITIATED');
+
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,10 +48,17 @@ export const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const effectiveCentreId = centreId || centresData?.content?.[0]?.id;
 
-    if (!legalName || !email || !password || !effectiveCentreId) {
-      setError('Please fill all required fields and ensure a centre is selected.');
+    const legalName = `${firstName.trim()} ${lastName.trim()}`.trim();
+    const effectiveCity = selectedCity === 'OTHER' ? customCity.trim() : selectedCity;
+
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password || !centreId.trim()) {
+      setError('Please fill all required fields: First Name, Last Name, Email, Password, and Centre ID.');
+      return;
+    }
+
+    if (selectedCity === 'OTHER' && !customCity.trim()) {
+      setError('Please specify your city name.');
       return;
     }
 
@@ -43,11 +67,14 @@ export const RegisterPage: React.FC = () => {
       setError(null);
       await register({
         legalName,
-        initiatedName: initiatedName || undefined,
-        email,
-        phone: phone || undefined,
+        initiatedName: initiatedName.trim() || undefined,
+        email: email.trim(),
+        phone: phone.trim() || undefined,
         password,
-        centreId: effectiveCentreId,
+        centreId: centreId.trim(),
+        profileType,
+        city: effectiveCity || undefined,
+        initiationStatus,
       });
       navigate('/');
     } catch (err: unknown) {
@@ -95,10 +122,10 @@ export const RegisterPage: React.FC = () => {
 
       {/* Right Registration Card */}
       <div className="md:w-7/12 flex items-center justify-center p-6 md:p-14 bg-slate-50 overflow-y-auto">
-        <div className="w-full max-w-lg bg-white rounded-3xl p-8 md:p-10 shadow-xl border border-slate-200/80">
+        <div className="w-full max-w-xl bg-white rounded-3xl p-8 md:p-10 shadow-xl border border-slate-200/80 my-4">
           <div className="text-left mb-6">
             <h2 className="text-2xl font-bold text-slate-900 font-heading">Devotee Registration</h2>
-            <p className="text-xs text-slate-500 mt-1">Create your profile to join your local youth centre</p>
+            <p className="text-xs text-slate-500 mt-1">Create your profile to join your assigned youth centre</p>
           </div>
 
           {queryCentreId && (
@@ -122,27 +149,40 @@ export const RegisterPage: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* 1. First Name & Last Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Legal Full Name *"
+                label="First Name *"
                 type="text"
-                placeholder="e.g. Ramesh Sharma"
-                value={legalName}
-                onChange={(e) => setLegalName(e.target.value)}
+                placeholder="e.g. Ramesh"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
                 leftIcon={<User className="w-4 h-4" />}
                 required
               />
 
               <Input
-                label="Initiated Name (If initiated)"
+                label="Last Name *"
                 type="text"
-                placeholder="e.g. Ramananda Das"
-                value={initiatedName}
-                onChange={(e) => setInitiatedName(e.target.value)}
-                leftIcon={<Sparkles className="w-4 h-4" />}
+                placeholder="e.g. Sharma"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                leftIcon={<User className="w-4 h-4" />}
+                required
               />
             </div>
 
+            {/* Initiated Name */}
+            <Input
+              label="Initiated Name (If initiated)"
+              type="text"
+              placeholder="e.g. Ramananda Das (Leave blank if uninitiated)"
+              value={initiatedName}
+              onChange={(e) => setInitiatedName(e.target.value)}
+              leftIcon={<Sparkles className="w-4 h-4" />}
+            />
+
+            {/* Email & Phone */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Email Address *"
@@ -164,40 +204,114 @@ export const RegisterPage: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                Select Youth Centre *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Building className="w-4 h-4" />
-                </div>
-                {centresData?.content && centresData.content.length > 0 ? (
+            {/* 2. Centre ID Input instead of dropdown */}
+            <Input
+              label="Youth Centre ID *"
+              type="text"
+              placeholder="e.g. 11111111-1111-1111-1111-111111111111"
+              value={centreId}
+              onChange={(e) => setCentreId(e.target.value)}
+              leftIcon={<Building className="w-4 h-4" />}
+              helperText="Enter the Centre UUID provided by your centre coordinator"
+              required
+            />
+
+            {/* 3. Profile Type Dropdown & 4. Initiation Status Dropdown */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Profile Type *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
                   <select
-                    value={centreId || centresData.content[0]?.id || ''}
-                    onChange={(e) => setCentreId(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500/20"
+                    value={profileType}
+                    onChange={(e) => setProfileType(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500/20 cursor-pointer"
                     required
                   >
-                    {centresData.content.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({c.shortCode}) - {c.city}, {c.country}
-                      </option>
-                    ))}
+                    <option value="STUDENT">Student (College / University)</option>
+                    <option value="WORKING_PROFESSIONAL">Working Professional</option>
+                    <option value="ALUMNI">Alumni / Graduate</option>
+                    <option value="OTHER">Other / Congregation Member</option>
                   </select>
-                ) : (
-                  <Input
-                    placeholder="Enter Centre UUID (e.g. 11111111-1111-1111-1111-111111111111)"
-                    value={centreId}
-                    onChange={(e) => setCentreId(e.target.value)}
-                    leftIcon={<Building className="w-4 h-4" />}
-                    helperText={centresLoading ? 'Loading available centres...' : 'No pre-seeded centre loaded yet; enter centre UUID'}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Initiation Status *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <select
+                    value={initiationStatus}
+                    onChange={(e) => setInitiationStatus(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500/20 cursor-pointer"
                     required
-                  />
-                )}
+                  >
+                    <option value="UNINITIATED">Uninitiated (Aspirant / Shelter)</option>
+                    <option value="FIRST_INITIATED">First Initiated (Hari-Nama Diksha)</option>
+                    <option value="SECOND_INITIATED">Second Initiated (Brahmana Diksha)</option>
+                  </select>
+                </div>
               </div>
             </div>
 
+            {/* 5. City Dropdown */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                City *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <select
+                  value={selectedCity}
+                  onChange={(e) => {
+                    setSelectedCity(e.target.value);
+                    if (e.target.value !== 'OTHER') {
+                      setCustomCity('');
+                    }
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-500/20 cursor-pointer"
+                  required
+                >
+                  <option value="">-- Select Your City --</option>
+                  <option value="Pune">Pune</option>
+                  <option value="Mumbai">Mumbai</option>
+                  <option value="Bengaluru">Bengaluru</option>
+                  <option value="Delhi NCR">Delhi NCR</option>
+                  <option value="Hyderabad">Hyderabad</option>
+                  <option value="Kolkata">Kolkata</option>
+                  <option value="Chennai">Chennai</option>
+                  <option value="Ahmedabad">Ahmedabad</option>
+                  <option value="Jaipur">Jaipur</option>
+                  <option value="Nagpur">Nagpur</option>
+                  <option value="Mayapur">Mayapur</option>
+                  <option value="Vrindavan">Vrindavan</option>
+                  <option value="OTHER">Other (Type city name below)</option>
+                </select>
+              </div>
+              {selectedCity === 'OTHER' && (
+                <div className="mt-2">
+                  <Input
+                    placeholder="Enter your city name"
+                    value={customCity}
+                    onChange={(e) => setCustomCity(e.target.value)}
+                    leftIcon={<MapPin className="w-4 h-4" />}
+                    required
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Password */}
             <Input
               label="Password (min 8 characters) *"
               type="password"

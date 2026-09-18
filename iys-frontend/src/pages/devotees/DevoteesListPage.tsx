@@ -16,15 +16,22 @@ import {
   Eye,
   Building2,
   Sparkles,
+  Lock,
 } from 'lucide-react';
 
 export const DevoteesListPage: React.FC = () => {
-  const { activeCentreId, hasAnyRole } = useAuth();
+  const { user, activeCentreId, hasAnyRole } = useAuth();
+  const isSuperAdmin = hasAnyRole(['SUPER_ADMIN']);
+  const isCentreAdmin = hasAnyRole(['CENTRE_ADMIN']);
+
   const { data: centresData } = useCentres(false, 0, 100);
   const centres = centresData?.content || [];
 
   const [selectedCentreId, setSelectedCentreId] = useState<string>('');
-  const effectiveCentreId = selectedCentreId !== '' ? selectedCentreId : (activeCentreId || '');
+  // CENTRE_ADMIN cannot view external centres; effectiveCentreId is strictly locked to their assigned centre
+  const effectiveCentreId = isSuperAdmin
+    ? selectedCentreId
+    : (user?.centreId || activeCentreId || '');
 
   const [selectedProfileType, setSelectedProfileType] = useState<ProfileType | undefined>(undefined);
   const [search, setSearch] = useState('');
@@ -42,6 +49,8 @@ export const DevoteesListPage: React.FC = () => {
   });
 
   const devotees = pageData?.content || [];
+
+  const userCentre = centres.find((c) => c.id === (user?.centreId || activeCentreId));
 
   const profileTypeTabs: { label: string; value: ProfileType | undefined }[] = [
     { label: 'All Devotees', value: undefined },
@@ -62,30 +71,42 @@ export const DevoteesListPage: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold text-slate-900 font-heading">Devotee Directory</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Manage profiles, initiate counselling records, and monitor youth devotees.
+            {isSuperAdmin
+              ? 'Manage profiles across global centres, initiate counselling records, and monitor youth devotees.'
+              : 'Manage profiles and youth counselling records for your assigned centre devotees.'}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Centre Switcher */}
-          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-xs">
-            <Building2 className="w-4 h-4 text-amber-500 shrink-0" />
-            <select
-              value={selectedCentreId || activeCentreId || ''}
-              onChange={(e) => {
-                setSelectedCentreId(e.target.value);
-                setPage(0);
-              }}
-              className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1"
-            >
-              {hasAnyRole(['SUPER_ADMIN']) && <option value="">🌐 All Centres (Global View)</option>}
-              {centres.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.shortCode})
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Centre Switcher or Assigned Centre Badge */}
+          {isSuperAdmin ? (
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-xs">
+              <Building2 className="w-4 h-4 text-amber-500 shrink-0" />
+              <select
+                value={selectedCentreId}
+                onChange={(e) => {
+                  setSelectedCentreId(e.target.value);
+                  setPage(0);
+                }}
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1"
+              >
+                <option value="">🌐 All Centres (Global View)</option>
+                {centres.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.shortCode})
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-xs text-xs font-semibold text-slate-800">
+              <Building2 className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>{userCentre ? `${userCentre.name} (${userCentre.shortCode})` : 'Assigned Centre'}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold shrink-0">
+                Your Centre
+              </span>
+            </div>
+          )}
 
           {hasAnyRole(['CENTRE_ADMIN', 'SUPER_ADMIN']) && (
             <Button
@@ -164,6 +185,7 @@ export const DevoteesListPage: React.FC = () => {
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   <th className="py-3.5 px-6">Devotee</th>
+                  <th className="py-3.5 px-4">Centre</th>
                   <th className="py-3.5 px-4">Profile Type</th>
                   <th className="py-3.5 px-4">Initiation Status</th>
                   <th className="py-3.5 px-4">Location</th>
@@ -171,63 +193,97 @@ export const DevoteesListPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {devotees.map((devotee) => (
-                  <tr key={devotee.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                          {devotee.initiatedName?.[0] || devotee.legalName[0]}
+                {devotees.map((devotee) => {
+                  const devoteeCentre = centres.find((c) => c.id === devotee.centreId);
+                  const isSameCentre = isSuperAdmin || devotee.centreId === (user?.centreId || activeCentreId);
+                  const canTakeAction = isSuperAdmin || (isCentreAdmin && isSameCentre);
+
+                  return (
+                    <tr key={devotee.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                            {devotee.initiatedName?.[0] || devotee.legalName[0]}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900">
+                              {devotee.initiatedName || devotee.legalName}
+                            </p>
+                            {devotee.initiatedName && (
+                              <p className="text-[11px] text-slate-500">Legal: {devotee.legalName}</p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-900">
-                            {devotee.initiatedName || devotee.legalName}
-                          </p>
-                          {devotee.initiatedName && (
-                            <p className="text-[11px] text-slate-500">Legal: {devotee.legalName}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="py-4 px-4">
-                      <Badge
-                        variant={
-                          devotee.profileType === 'STUDENT'
-                            ? 'amber'
-                            : devotee.profileType === 'WORKING_PROFESSIONAL'
-                            ? 'blue'
-                            : devotee.profileType === 'ALUMNI'
-                            ? 'purple'
-                            : 'slate'
-                        }
-                      >
-                        {devotee.profileType?.replace('_', ' ')}
-                      </Badge>
-                    </td>
+                      <td className="py-4 px-4">
+                        <span className="inline-flex items-center gap-1 font-semibold text-slate-700 text-xs">
+                          <Building2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          {devoteeCentre ? `${devoteeCentre.shortCode}` : 'Centre'}
+                        </span>
+                      </td>
 
-                    <td className="py-4 px-4">
-                      <span className="inline-flex items-center gap-1 font-medium text-slate-700">
-                        <Sparkles className="w-3 h-3 text-amber-500" />
-                        {devotee.initiationStatus || 'UNINITIATED'}
-                      </span>
-                    </td>
+                      <td className="py-4 px-4">
+                        <Badge
+                          variant={
+                            devotee.profileType === 'STUDENT'
+                              ? 'amber'
+                              : devotee.profileType === 'WORKING_PROFESSIONAL'
+                              ? 'blue'
+                              : devotee.profileType === 'ALUMNI'
+                              ? 'purple'
+                              : 'slate'
+                          }
+                        >
+                          {devotee.profileType?.replace('_', ' ')}
+                        </Badge>
+                      </td>
 
-                    <td className="py-4 px-4 text-slate-600">
-                      {devotee.city || 'Not specified'}
-                    </td>
+                      <td className="py-4 px-4">
+                        <span className="inline-flex items-center gap-1 font-medium text-slate-700">
+                          <Sparkles className="w-3 h-3 text-amber-500" />
+                          {devotee.initiationStatus || 'UNINITIATED'}
+                        </span>
+                      </td>
 
-                    <td className="py-4 px-6 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedDevoteeId(devotee.id)}
-                        leftIcon={<Eye className="w-3.5 h-3.5" />}
-                      >
-                        View Profile
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="py-4 px-4 text-slate-600">
+                        {devotee.city || 'Not specified'}
+                      </td>
+
+                      <td className="py-4 px-6 text-right">
+                        {canTakeAction ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedDevoteeId(devotee.id)}
+                            leftIcon={<Eye className="w-3.5 h-3.5 text-amber-600" />}
+                          >
+                            Manage Profile
+                          </Button>
+                        ) : (
+                          <div className="inline-flex items-center gap-2 justify-end">
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200"
+                              title="Action rights restricted to same centre devotees"
+                            >
+                              <Lock className="w-3 h-3 text-slate-400" />
+                              External Centre
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedDevoteeId(devotee.id)}
+                              leftIcon={<Eye className="w-3.5 h-3.5 text-slate-500" />}
+                              className="text-slate-600 hover:text-slate-900"
+                            >
+                              View Only
+                            </Button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -265,7 +321,7 @@ export const DevoteesListPage: React.FC = () => {
       <CreateDevoteeModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        centreId={effectiveCentreId || centres[0]?.id || ''}
+        centreId={user?.centreId || effectiveCentreId || centres[0]?.id || ''}
       />
 
       <DevoteeDetailModal

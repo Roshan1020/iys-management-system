@@ -58,6 +58,16 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ErrorCode.INVALID_ARGUMENT, message));
     }
 
+    // ── Illegal Argument ───────────────────────────────────────
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Illegal argument: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ErrorCode.INVALID_ARGUMENT, ex.getMessage()));
+    }
+
     // ── Spring Security ─────────────────────────────────────────
 
     @ExceptionHandler(AccessDeniedException.class)

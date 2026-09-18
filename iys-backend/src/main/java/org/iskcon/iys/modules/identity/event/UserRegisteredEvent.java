@@ -8,6 +8,9 @@ public record UserRegisteredEvent(
         String email,
         String legalName,
         String initiatedName,
-        String phone
+        String phone,
+        String profileType,
+        String city,
+        String initiationStatus
 ) {
 }

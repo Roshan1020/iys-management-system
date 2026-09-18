@@ -6,6 +6,7 @@ import org.iskcon.iys.modules.devotee.domain.AlumniProfile;
 import org.iskcon.iys.modules.devotee.domain.DevoteeProfile;
 import org.iskcon.iys.modules.devotee.domain.ProfessionalProfile;
 import org.iskcon.iys.modules.devotee.domain.StudentProfile;
+import org.iskcon.iys.modules.devotee.domain.enums.InitiationStatus;
 import org.iskcon.iys.modules.devotee.domain.enums.ProfileType;
 import org.iskcon.iys.modules.devotee.dto.*;
 import org.iskcon.iys.modules.devotee.infrastructure.AlumniProfileRepository;
@@ -13,6 +14,7 @@ import org.iskcon.iys.modules.devotee.infrastructure.DevoteeRepository;
 import org.iskcon.iys.modules.devotee.infrastructure.ProfessionalProfileRepository;
 import org.iskcon.iys.modules.devotee.infrastructure.StudentProfileRepository;
 import org.iskcon.iys.shared.dto.PageResponse;
+import org.iskcon.iys.shared.exception.BadRequestException;
 import org.iskcon.iys.shared.exception.DuplicateResourceException;
 import org.iskcon.iys.shared.exception.ErrorCode;
 import org.iskcon.iys.shared.exception.ForbiddenException;
@@ -58,19 +60,34 @@ public class DevoteeServiceImpl implements DevoteeService {
 
     @Override
     public DevoteeResponse createDevotee(CreateDevoteeRequest request) {
-        checkCentreAccess(request.centreId());
+        UserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        UUID effectiveCentreId = request.centreId();
+        if (effectiveCentreId == null && currentUser != null) {
+            effectiveCentreId = currentUser.getCentreId();
+        }
+        if (effectiveCentreId == null) {
+            throw new BadRequestException("Centre ID is required.");
+        }
+        checkCentreAccess(effectiveCentreId);
+
+        if (request.initiationStatus() != null && request.initiationStatus() != InitiationStatus.UNINITIATED) {
+            if (request.initiatedName() == null || request.initiatedName().trim().isBlank()) {
+                throw new BadRequestException("Initiated Name is required when Initiation Status is not UNINITIATED.");
+            }
+        }
 
         UUID targetUserId = (request.userId() != null)
                 ? request.userId()
-                : userService.getOrCreateDevoteeUser(request.email(), request.centreId(), request.phone());
+                : userService.getOrCreateDevoteeUser(request.email(), effectiveCentreId, request.phone());
 
         if (devoteeRepository.existsByUserId(targetUserId)) {
             throw new DuplicateResourceException(ErrorCode.DEVOTEE_PROFILE_EXISTS, "Devotee profile already exists for this user.");
         }
 
         DevoteeProfile entity = DevoteeMapper.toEntity(request);
+        entity.setCentreId(effectiveCentreId);
         entity.setUserId(targetUserId);
-        UUID currentUserId = SecurityUtils.getCurrentUser() != null ? SecurityUtils.getCurrentUser().getUserId() : null;
+        UUID currentUserId = currentUser != null ? currentUser.getUserId() : null;
         entity.setCreatedBy(currentUserId);
         entity.setUpdatedBy(currentUserId);
         DevoteeProfile saved = devoteeRepository.save(entity);
@@ -137,6 +154,15 @@ public class DevoteeServiceImpl implements DevoteeService {
         if (request.centreId() != null) {
             checkCentreAccess(request.centreId());
         }
+
+        InitiationStatus effStatus = request.initiationStatus() != null ? request.initiationStatus() : devotee.getInitiationStatus();
+        String effInitName = request.initiatedName() != null ? request.initiatedName() : devotee.getInitiatedName();
+        if (effStatus != null && effStatus != InitiationStatus.UNINITIATED) {
+            if (effInitName == null || effInitName.trim().isBlank()) {
+                throw new BadRequestException("Initiated Name is required when Initiation Status is not UNINITIATED.");
+            }
+        }
+
         DevoteeMapper.updateEntity(devotee, request);
         devotee.setUpdatedBy(SecurityUtils.getCurrentUser().getUserId());
         DevoteeProfile updated = devoteeRepository.save(devotee);

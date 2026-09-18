@@ -1,0 +1,22 @@
+Your entire workspace d:\MyProject_2025\IYS_Managment_System is already linked to Git and synchronized with your GitHub repository!
+
+Workspace Git Status
+powershell
+Repository Root:  D:\MyProject_2025\IYS_Managment_System\.git
+Current Branch:   main
+Tracking Remote:  origin/main (https://github.com/Roshan1020/iys-management-system.git)
+Latest Commit:    c49e60a ("feat: ISKCON Youth Services (IYS) Management System - Full Backend and Frontend")
+Status:           Working tree clean, up to date with origin/main
+How to use Git in this Workspace:
+Inside the IDE (Visual UI):
+
+Press Ctrl + Shift + G (or click the Source Control icon on the left activity bar).
+The IDE now recognizes this workspace as a Git repository.
+Any file you modify will automatically show up under Changes, where you can stage, commit, and sync with one click.
+From the Terminal:
+
+Check status: git status
+Stage changes: git add .
+Commit: git commit -m "your commit message"
+Push to GitHub: git push
+Your GitHub repository is live at: https://github.com/Roshan1020/iys-management-system.

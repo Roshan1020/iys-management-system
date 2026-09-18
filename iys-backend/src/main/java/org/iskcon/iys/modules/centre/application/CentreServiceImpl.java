@@ -1,6 +1,7 @@
 package org.iskcon.iys.modules.centre.application;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,9 +14,12 @@ import org.iskcon.iys.modules.centre.infrastructure.CentreRepository;
 import org.iskcon.iys.shared.dto.PageResponse;
 import org.iskcon.iys.shared.exception.DuplicateResourceException;
 import org.iskcon.iys.shared.exception.ErrorCode;
+import org.iskcon.iys.shared.exception.ForbiddenException;
 import org.iskcon.iys.shared.exception.ResourceNotFoundException;
 import org.iskcon.iys.shared.security.SecurityUtils;
+import org.iskcon.iys.shared.security.UserPrincipal;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +44,10 @@ public class CentreServiceImpl implements CentreService {
 
     @Override
     public CentreResponse getCentreById(UUID id) {
+        UserPrincipal currentUser = SecurityUtils.getCurrentUserOrNull();
+        if (currentUser != null && !currentUser.isSuperAdmin() && !currentUser.belongsToCentre(id)) {
+            throw new ForbiddenException("Access denied to centre data.");
+        }
         Centre centre = centreRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "Centre not found."));
         return CentreMapper.toResponse(centre);
@@ -47,6 +55,17 @@ public class CentreServiceImpl implements CentreService {
 
     @Override
     public PageResponse<CentreResponse> getAllCentres(boolean activeOnly, Pageable pageable) {
+        UserPrincipal currentUser = SecurityUtils.getCurrentUserOrNull();
+        if (currentUser != null && !currentUser.isSuperAdmin()) {
+            UUID userCentreId = currentUser.getCentreId();
+            if (userCentreId != null) {
+                Page<Centre> page = centreRepository.findById(userCentreId)
+                        .filter(c -> !activeOnly || c.isActive())
+                        .map(c -> new PageImpl<>(List.of(c), pageable, 1))
+                        .orElseGet(() -> new PageImpl<>(List.of(), pageable, 0));
+                return PageResponse.from(page.map(CentreMapper::toResponse));
+            }
+        }
         Page<Centre> page = activeOnly ? 
                 centreRepository.findAllByIsActive(true, pageable) : 
                 centreRepository.findAll(pageable);
@@ -83,6 +102,10 @@ public class CentreServiceImpl implements CentreService {
     public CentreResponse getCentreByShortCode(String shortCode) {
         Centre centre = centreRepository.findByShortCodeIgnoreCase(shortCode)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "Centre not found."));
+        UserPrincipal currentUser = SecurityUtils.getCurrentUserOrNull();
+        if (currentUser != null && !currentUser.isSuperAdmin() && !currentUser.belongsToCentre(centre.getId())) {
+            throw new ForbiddenException("Access denied to centre data.");
+        }
         return CentreMapper.toResponse(centre);
     }
 }

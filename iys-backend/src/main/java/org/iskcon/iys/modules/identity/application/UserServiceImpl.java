@@ -23,6 +23,7 @@ import org.iskcon.iys.modules.identity.infrastructure.UserRoleRepository;
 import org.iskcon.iys.shared.dto.PageResponse;
 import org.iskcon.iys.shared.exception.DuplicateResourceException;
 import org.iskcon.iys.shared.exception.ErrorCode;
+import org.iskcon.iys.shared.exception.ForbiddenException;
 import org.iskcon.iys.shared.exception.ResourceNotFoundException;
 import org.iskcon.iys.shared.exception.UnauthorizedException;
 import org.iskcon.iys.shared.security.JwtService;
@@ -81,7 +82,10 @@ public class UserServiceImpl implements UserService {
                 user.getEmail(),
                 request.legalName(),
                 request.initiatedName(),
-                request.phone()
+                request.phone(),
+                request.profileType(),
+                request.city(),
+                request.initiationStatus()
         ));
 
         UserPrincipal principal = new UserPrincipal(
@@ -150,6 +154,13 @@ public class UserServiceImpl implements UserService {
 
         UUID targetCentreId = request.centreId() != null ? request.centreId() : user.getCentreId();
 
+        UserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser != null && !currentUser.isSuperAdmin()) {
+            if (!currentUser.belongsToCentre(user.getCentreId()) || !currentUser.belongsToCentre(targetCentreId)) {
+                throw new ForbiddenException("Access denied: You can only assign roles within your centre");
+            }
+        }
+
         Role targetRole = null;
         if (request.roleId() != null) {
             targetRole = roleRepository.findById(request.roleId()).orElse(null);
@@ -217,6 +228,13 @@ public class UserServiceImpl implements UserService {
 
         UUID targetCentreId = centreId != null ? centreId : user.getCentreId();
 
+        UserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser != null && !currentUser.isSuperAdmin()) {
+            if (!currentUser.belongsToCentre(user.getCentreId()) || (targetCentreId != null && !currentUser.belongsToCentre(targetCentreId))) {
+                throw new ForbiddenException("Access denied: You can only revoke roles within your centre");
+            }
+        }
+
         List<UserRole> activeRoles = userRoleRepository.findActiveRolesByUserId(userId);
         
         UserRole targetRole = activeRoles.stream()
@@ -238,6 +256,13 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
         
+        UserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser != null && !currentUser.isSuperAdmin()) {
+            if (!currentUser.belongsToCentre(user.getCentreId())) {
+                throw new ForbiddenException("Access denied: You can only update user status within your centre");
+            }
+        }
+
         user.setStatus(newStatus);
         userRepository.save(user);
         log.info("User {} status updated to {}", userId, newStatus);
@@ -274,7 +299,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UUID getOrCreateDevoteeUser(String email, UUID centreId, String phone) {
         String targetEmail = (email != null && !email.isBlank())
-                ? email
+                ? email.trim()
                 : "devotee." + UUID.randomUUID().toString().substring(0, 8) + "@iys.org";
 
         User user = userRepository.findByEmail(targetEmail).orElse(null);
@@ -283,7 +308,7 @@ public class UserServiceImpl implements UserService {
                     .centreId(centreId)
                     .email(targetEmail)
                     .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
-                    .phone(phone)
+                    .phone(phone != null && !phone.isBlank() ? phone.trim() : null)
                     .status(UserStatus.ACTIVE)
                     .build();
             user = userRepository.save(user);
@@ -298,6 +323,11 @@ public class UserServiceImpl implements UserService {
                         .centreId(centreId)
                         .build();
                 userRoleRepository.save(userRole);
+            }
+        } else {
+            UserPrincipal currentUser = SecurityUtils.getCurrentUser();
+            if (currentUser != null && !currentUser.isSuperAdmin() && user.getCentreId() != null && !user.getCentreId().equals(centreId)) {
+                throw new ForbiddenException("A user with this email address already belongs to another youth centre.");
             }
         }
         return user.getId();

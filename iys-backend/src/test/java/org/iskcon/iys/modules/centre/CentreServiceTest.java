@@ -49,6 +49,7 @@ class CentreServiceTest {
         );
         securityUtilsMockedStatic = mockStatic(SecurityUtils.class);
         securityUtilsMockedStatic.when(SecurityUtils::getCurrentUser).thenReturn(principal);
+        securityUtilsMockedStatic.when(SecurityUtils::getCurrentUserOrNull).thenReturn(principal);
     }
 
     @AfterEach
@@ -110,5 +111,41 @@ class CentreServiceTest {
 
         verify(centreRepository).save(centre);
         assertNotNull(centre.getDeletedAt());
+    }
+
+    @Test
+    void getAllCentres_whenCentreAdmin_returnsOnlyBelongedCentre() {
+        UUID centreAdminCentreId = UUID.randomUUID();
+        UserPrincipal centreAdmin = new UserPrincipal(
+                UUID.randomUUID(), centreAdminCentreId, "admin@centre.org", "pass",
+                List.of("CENTRE_ADMIN")
+        );
+        securityUtilsMockedStatic.when(SecurityUtils::getCurrentUserOrNull).thenReturn(centreAdmin);
+
+        Centre myCentre = new Centre();
+        myCentre.setId(centreAdminCentreId);
+        myCentre.setName("Pune East");
+        myCentre.setActive(true);
+
+        when(centreRepository.findById(centreAdminCentreId)).thenReturn(Optional.of(myCentre));
+
+        var res = centreService.getAllCentres(true, org.springframework.data.domain.PageRequest.of(0, 10));
+        assertNotNull(res);
+        assertEquals(1, res.getContent().size());
+        assertEquals("Pune East", res.getContent().get(0).getName());
+    }
+
+    @Test
+    void getCentreById_whenCentreAdminAccessesOtherCentre_throwsForbiddenException() {
+        UUID myCentreId = UUID.randomUUID();
+        UUID otherCentreId = UUID.randomUUID();
+        UserPrincipal centreAdmin = new UserPrincipal(
+                UUID.randomUUID(), myCentreId, "admin@centre.org", "pass",
+                List.of("CENTRE_ADMIN")
+        );
+        securityUtilsMockedStatic.when(SecurityUtils::getCurrentUserOrNull).thenReturn(centreAdmin);
+
+        assertThrows(org.iskcon.iys.shared.exception.ForbiddenException.class, 
+                () -> centreService.getCentreById(otherCentreId));
     }
 }

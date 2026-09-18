@@ -114,19 +114,25 @@ export const DashboardPage: React.FC = () => {
         {/* Total Centres */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Centres Active</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              {hasAnyRole(['SUPER_ADMIN']) ? 'Centres Active' : 'Assigned Centre'}
+            </span>
             <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
               <Building2 className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-3xl font-extrabold text-slate-900 font-heading">
-              {centresData?.totalElements ?? (centresData?.content?.length || 1)}
+              {hasAnyRole(['SUPER_ADMIN'])
+                ? (centresData?.totalElements ?? (centresData?.content?.length || 1))
+                : 1}
             </span>
-            <span className="text-xs text-slate-500 font-medium">locations</span>
+            <span className="text-xs text-slate-500 font-medium">
+              {hasAnyRole(['SUPER_ADMIN']) ? 'locations' : 'chapter assigned'}
+            </span>
           </div>
           <p className="text-xs text-blue-600 font-medium mt-2 flex items-center gap-1">
-            <span>Across regions</span>
+            <span>{hasAnyRole(['SUPER_ADMIN']) ? 'Across regions' : 'Operational context'}</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </p>
         </div>
