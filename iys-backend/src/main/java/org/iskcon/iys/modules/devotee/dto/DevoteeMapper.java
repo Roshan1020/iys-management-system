@@ -34,6 +34,9 @@ public class DevoteeMapper {
                 .joinDate(profile.getJoinDate())
                 .isRegular(profile.isRegular())
                 .notes(profile.getNotes())
+                .studentProfile(toStudentResponse(profile.getStudentProfile()))
+                .professionalProfile(toProfessionalResponse(profile.getProfessionalProfile()))
+                .alumniProfile(toAlumniResponse(profile.getAlumniProfile()))
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
                 .build();
@@ -102,52 +105,52 @@ public class DevoteeMapper {
         if (req == null) return null;
         return StudentProfile.builder()
                 .devoteeProfile(profile)
-                .institution(req.institution())
-                .course(req.course())
-                .specialisation(req.specialisation())
-                .yearOfStudy(req.yearOfStudy())
-                .expectedGraduation(req.expectedGraduation())
+                .institution(req.getEffectiveInstitution())
+                .course(req.getEffectiveCourse())
+                .specialisation(req.getEffectiveSpecialisation())
+                .yearOfStudy(req.getEffectiveYearOfStudy())
+                .expectedGraduation(req.getEffectiveExpectedGraduation())
                 .studentIdNumber(req.studentIdNumber())
-                .hostelResident(req.hostelResident())
+                .hostelResident(req.isEffectiveHostelResident())
                 .build();
     }
 
     public static void updateStudentProfile(StudentProfile sp, StudentProfileRequest req) {
         if (req == null) return;
-        if (req.institution() != null) sp.setInstitution(req.institution());
-        if (req.course() != null) sp.setCourse(req.course());
-        if (req.specialisation() != null) sp.setSpecialisation(req.specialisation());
-        if (req.yearOfStudy() != null) sp.setYearOfStudy(req.yearOfStudy());
-        if (req.expectedGraduation() != null) sp.setExpectedGraduation(req.expectedGraduation());
+        if (req.getEffectiveInstitution() != null) sp.setInstitution(req.getEffectiveInstitution());
+        if (req.getEffectiveCourse() != null) sp.setCourse(req.getEffectiveCourse());
+        if (req.getEffectiveSpecialisation() != null) sp.setSpecialisation(req.getEffectiveSpecialisation());
+        if (req.getEffectiveYearOfStudy() != null) sp.setYearOfStudy(req.getEffectiveYearOfStudy());
+        if (req.getEffectiveExpectedGraduation() != null) sp.setExpectedGraduation(req.getEffectiveExpectedGraduation());
         if (req.studentIdNumber() != null) sp.setStudentIdNumber(req.studentIdNumber());
-        sp.setHostelResident(req.hostelResident());
+        sp.setHostelResident(req.isEffectiveHostelResident());
     }
 
     public static ProfessionalProfile toProfessionalProfile(ProfessionalProfileRequest req, DevoteeProfile profile) {
         if (req == null) return null;
         return ProfessionalProfile.builder()
                 .devoteeProfile(profile)
-                .company(req.company())
-                .designation(req.designation())
-                .industry(req.industry())
-                .employmentType(req.employmentType())
-                .experienceYears(req.experienceYears())
+                .company(req.getEffectiveCompany())
+                .designation(req.getEffectiveDesignation())
+                .industry(req.getEffectiveIndustry())
+                .employmentType(req.getEffectiveEmploymentType())
+                .experienceYears(req.getEffectiveExperienceYears())
                 .annualIncomeRange(req.annualIncomeRange())
                 .linkedinUrl(req.linkedinUrl())
-                .isMentorWilling(req.isMentorWilling())
+                .isMentorWilling(req.isEffectiveMentorWilling())
                 .build();
     }
 
     public static void updateProfessionalProfile(ProfessionalProfile pp, ProfessionalProfileRequest req) {
         if (req == null) return;
-        if (req.company() != null) pp.setCompany(req.company());
-        if (req.designation() != null) pp.setDesignation(req.designation());
-        if (req.industry() != null) pp.setIndustry(req.industry());
-        if (req.employmentType() != null) pp.setEmploymentType(req.employmentType());
-        if (req.experienceYears() != null) pp.setExperienceYears(req.experienceYears());
+        if (req.getEffectiveCompany() != null) pp.setCompany(req.getEffectiveCompany());
+        if (req.getEffectiveDesignation() != null) pp.setDesignation(req.getEffectiveDesignation());
+        if (req.getEffectiveIndustry() != null) pp.setIndustry(req.getEffectiveIndustry());
+        if (req.employmentType() != null) pp.setEmploymentType(req.getEffectiveEmploymentType());
+        if (req.getEffectiveExperienceYears() != null) pp.setExperienceYears(req.getEffectiveExperienceYears());
         if (req.annualIncomeRange() != null) pp.setAnnualIncomeRange(req.annualIncomeRange());
         if (req.linkedinUrl() != null) pp.setLinkedinUrl(req.linkedinUrl());
-        pp.setMentorWilling(req.isMentorWilling());
+        pp.setMentorWilling(req.isEffectiveMentorWilling());
     }
 
     public static AlumniProfile toAlumniProfile(AlumniProfileRequest req, DevoteeProfile profile) {
@@ -156,12 +159,12 @@ public class DevoteeMapper {
                 .devoteeProfile(profile)
                 .graduationYear(req.graduationYear())
                 .institution(req.institution())
-                .degree(req.degree())
+                .degree(req.getEffectiveDegree())
                 .currentProfession(req.currentProfession())
-                .currentCompany(req.currentCompany())
+                .currentCompany(req.getEffectiveCurrentCompany())
                 .cityOfResidence(req.cityOfResidence())
-                .isActiveDevotee(req.isActiveDevotee())
-                .wantsToConnect(req.wantsToConnect())
+                .isActiveDevotee(req.isEffectiveActiveDevotee())
+                .wantsToConnect(req.isEffectiveWantsToConnect())
                 .build();
     }
 
@@ -169,11 +172,55 @@ public class DevoteeMapper {
         if (req == null) return;
         if (req.graduationYear() != null) ap.setGraduationYear(req.graduationYear());
         if (req.institution() != null) ap.setInstitution(req.institution());
-        if (req.degree() != null) ap.setDegree(req.degree());
+        if (req.getEffectiveDegree() != null) ap.setDegree(req.getEffectiveDegree());
         if (req.currentProfession() != null) ap.setCurrentProfession(req.currentProfession());
-        if (req.currentCompany() != null) ap.setCurrentCompany(req.currentCompany());
+        if (req.getEffectiveCurrentCompany() != null) ap.setCurrentCompany(req.getEffectiveCurrentCompany());
         if (req.cityOfResidence() != null) ap.setCityOfResidence(req.cityOfResidence());
-        ap.setActiveDevotee(req.isActiveDevotee());
-        ap.setWantsToConnect(req.wantsToConnect());
+        ap.setActiveDevotee(req.isEffectiveActiveDevotee());
+        ap.setWantsToConnect(req.isEffectiveWantsToConnect());
+    }
+
+    public static StudentProfileResponse toStudentResponse(StudentProfile sp) {
+        if (sp == null) return null;
+        return StudentProfileResponse.builder()
+                .id(sp.getId())
+                .institution(sp.getInstitution())
+                .course(sp.getCourse())
+                .specialisation(sp.getSpecialisation())
+                .yearOfStudy(sp.getYearOfStudy())
+                .expectedGraduation(sp.getExpectedGraduation())
+                .studentIdNumber(sp.getStudentIdNumber())
+                .hostelResident(sp.isHostelResident())
+                .build();
+    }
+
+    public static ProfessionalProfileResponse toProfessionalResponse(ProfessionalProfile pp) {
+        if (pp == null) return null;
+        return ProfessionalProfileResponse.builder()
+                .id(pp.getId())
+                .company(pp.getCompany())
+                .designation(pp.getDesignation())
+                .industry(pp.getIndustry())
+                .employmentType(pp.getEmploymentType())
+                .experienceYears(pp.getExperienceYears())
+                .annualIncomeRange(pp.getAnnualIncomeRange())
+                .linkedinUrl(pp.getLinkedinUrl())
+                .isMentorWilling(pp.isMentorWilling())
+                .build();
+    }
+
+    public static AlumniProfileResponse toAlumniResponse(AlumniProfile ap) {
+        if (ap == null) return null;
+        return AlumniProfileResponse.builder()
+                .id(ap.getId())
+                .graduationYear(ap.getGraduationYear())
+                .institution(ap.getInstitution())
+                .degree(ap.getDegree())
+                .currentProfession(ap.getCurrentProfession())
+                .currentCompany(ap.getCurrentCompany())
+                .cityOfResidence(ap.getCityOfResidence())
+                .isActiveDevotee(ap.isActiveDevotee())
+                .wantsToConnect(ap.isWantsToConnect())
+                .build();
     }
 }

@@ -31,6 +31,9 @@ public class DevoteeResponse {
     private LocalDate joinDate;
     private boolean isRegular;
     private String notes;
+    private StudentProfileResponse studentProfile;
+    private ProfessionalProfileResponse professionalProfile;
+    private AlumniProfileResponse alumniProfile;
     private Instant createdAt;
     private Instant updatedAt;
 }

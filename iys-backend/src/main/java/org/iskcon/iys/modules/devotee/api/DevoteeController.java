@@ -65,9 +65,9 @@ public class DevoteeController {
 
     @GetMapping("/{id}/student-profile")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Object>> getStudentProfile(@PathVariable UUID id) {
-        // Assume service retrieves full devotee with profile or returns a nested dto logic. Here we reuse DevoteeResponse.
-        return ResponseEntity.ok(ApiResponse.success(null)); // Placeholder as logic can vary. Returning ok.
+    public ResponseEntity<ApiResponse<StudentProfileResponse>> getStudentProfile(@PathVariable UUID id) {
+        DevoteeResponse devotee = devoteeService.getDevoteeById(id);
+        return ResponseEntity.ok(ApiResponse.success(devotee.getStudentProfile()));
     }
 
     @PutMapping("/{id}/student-profile")
@@ -80,8 +80,9 @@ public class DevoteeController {
 
     @GetMapping("/{id}/professional-profile")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Object>> getProfessionalProfile(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success(null));
+    public ResponseEntity<ApiResponse<ProfessionalProfileResponse>> getProfessionalProfile(@PathVariable UUID id) {
+        DevoteeResponse devotee = devoteeService.getDevoteeById(id);
+        return ResponseEntity.ok(ApiResponse.success(devotee.getProfessionalProfile()));
     }
 
     @PutMapping("/{id}/professional-profile")
@@ -94,8 +95,9 @@ public class DevoteeController {
 
     @GetMapping("/{id}/alumni-profile")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Object>> getAlumniProfile(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success(null));
+    public ResponseEntity<ApiResponse<AlumniProfileResponse>> getAlumniProfile(@PathVariable UUID id) {
+        DevoteeResponse devotee = devoteeService.getDevoteeById(id);
+        return ResponseEntity.ok(ApiResponse.success(devotee.getAlumniProfile()));
     }
 
     @PutMapping("/{id}/alumni-profile")

@@ -180,112 +180,205 @@ export const DevoteesListPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3.5 px-6">Devotee</th>
-                  <th className="py-3.5 px-4">Centre</th>
-                  <th className="py-3.5 px-4">Profile Type</th>
-                  <th className="py-3.5 px-4">Initiation Status</th>
-                  <th className="py-3.5 px-4">Location</th>
-                  <th className="py-3.5 px-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
-                {devotees.map((devotee) => {
-                  const devoteeCentre = centres.find((c) => c.id === devotee.centreId);
-                  const isSameCentre = isSuperAdmin || devotee.centreId === (user?.centreId || activeCentreId);
-                  const canTakeAction = isSuperAdmin || (isCentreAdmin && isSameCentre);
+          <div>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="py-3.5 px-6">Devotee</th>
+                    <th className="py-3.5 px-4">Centre</th>
+                    <th className="py-3.5 px-4">Profile Type</th>
+                    <th className="py-3.5 px-4">Initiation Status</th>
+                    <th className="py-3.5 px-4">Location</th>
+                    <th className="py-3.5 px-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs">
+                  {devotees.map((devotee) => {
+                    const devoteeCentre = centres.find((c) => c.id === devotee.centreId);
+                    const isSameCentre = isSuperAdmin || devotee.centreId === (user?.centreId || activeCentreId);
+                    const canTakeAction = isSuperAdmin || (isCentreAdmin && isSameCentre);
 
-                  return (
-                    <tr key={devotee.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                            {devotee.initiatedName?.[0] || devotee.legalName[0]}
+                    return (
+                      <tr key={devotee.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                              {devotee.initiatedName?.[0] || devotee.legalName[0]}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900">
+                                {devotee.initiatedName || devotee.legalName}
+                              </p>
+                              {devotee.initiatedName && (
+                                <p className="text-[11px] text-slate-500">Legal: {devotee.legalName}</p>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-bold text-slate-900">
-                              {devotee.initiatedName || devotee.legalName}
-                            </p>
-                            {devotee.initiatedName && (
-                              <p className="text-[11px] text-slate-500">Legal: {devotee.legalName}</p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="py-4 px-4">
-                        <span className="inline-flex items-center gap-1 font-semibold text-slate-700 text-xs">
-                          <Building2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                          {devoteeCentre ? `${devoteeCentre.shortCode}` : 'Centre'}
-                        </span>
-                      </td>
+                        <td className="py-4 px-4">
+                          <span className="inline-flex items-center gap-1 font-semibold text-slate-700 text-xs">
+                            <Building2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            {devoteeCentre ? `${devoteeCentre.shortCode}` : 'Centre'}
+                          </span>
+                        </td>
 
-                      <td className="py-4 px-4">
-                        <Badge
-                          variant={
-                            devotee.profileType === 'STUDENT'
-                              ? 'amber'
-                              : devotee.profileType === 'WORKING_PROFESSIONAL'
-                              ? 'blue'
-                              : devotee.profileType === 'ALUMNI'
-                              ? 'purple'
-                              : 'slate'
-                          }
-                        >
-                          {devotee.profileType?.replace('_', ' ')}
-                        </Badge>
-                      </td>
-
-                      <td className="py-4 px-4">
-                        <span className="inline-flex items-center gap-1 font-medium text-slate-700">
-                          <Sparkles className="w-3 h-3 text-amber-500" />
-                          {devotee.initiationStatus || 'UNINITIATED'}
-                        </span>
-                      </td>
-
-                      <td className="py-4 px-4 text-slate-600">
-                        {devotee.city || 'Not specified'}
-                      </td>
-
-                      <td className="py-4 px-6 text-right">
-                        {canTakeAction ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedDevoteeId(devotee.id)}
-                            leftIcon={<Eye className="w-3.5 h-3.5 text-amber-600" />}
+                        <td className="py-4 px-4">
+                          <Badge
+                            variant={
+                              devotee.profileType === 'STUDENT'
+                                ? 'amber'
+                                : devotee.profileType === 'WORKING_PROFESSIONAL'
+                                ? 'blue'
+                                : devotee.profileType === 'ALUMNI'
+                                ? 'purple'
+                                : 'slate'
+                            }
                           >
-                            Manage Profile
-                          </Button>
-                        ) : (
-                          <div className="inline-flex items-center gap-2 justify-end">
-                            <span
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200"
-                              title="Action rights restricted to same centre devotees"
-                            >
-                              <Lock className="w-3 h-3 text-slate-400" />
-                              External Centre
-                            </span>
+                            {devotee.profileType?.replace('_', ' ')}
+                          </Badge>
+                        </td>
+
+                        <td className="py-4 px-4">
+                          <span className="inline-flex items-center gap-1 font-medium text-slate-700">
+                            <Sparkles className="w-3 h-3 text-amber-500" />
+                            {devotee.initiationStatus || 'UNINITIATED'}
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-4 text-slate-600">
+                          {devotee.city || 'Not specified'}
+                        </td>
+
+                        <td className="py-4 px-6 text-right">
+                          {canTakeAction ? (
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
                               onClick={() => setSelectedDevoteeId(devotee.id)}
-                              leftIcon={<Eye className="w-3.5 h-3.5 text-slate-500" />}
-                              className="text-slate-600 hover:text-slate-900"
+                              leftIcon={<Eye className="w-3.5 h-3.5 text-amber-600" />}
                             >
-                              View Only
+                              Manage Profile
                             </Button>
+                          ) : (
+                            <div className="inline-flex items-center gap-2 justify-end">
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200"
+                                title="Action rights restricted to same centre devotees"
+                              >
+                                <Lock className="w-3 h-3 text-slate-400" />
+                                External Centre
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedDevoteeId(devotee.id)}
+                                leftIcon={<Eye className="w-3.5 h-3.5 text-slate-500" />}
+                                className="text-slate-600 hover:text-slate-900"
+                              >
+                                View Only
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards View for Phone Use */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {devotees.map((devotee) => {
+                const devoteeCentre = centres.find((c) => c.id === devotee.centreId);
+                const isSameCentre = isSuperAdmin || devotee.centreId === (user?.centreId || activeCentreId);
+                const canTakeAction = isSuperAdmin || (isCentreAdmin && isSameCentre);
+
+                return (
+                  <div key={devotee.id} className="p-4 space-y-3 hover:bg-slate-50/50 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                          {devotee.initiatedName?.[0] || devotee.legalName[0]}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-900 text-sm truncate">
+                            {devotee.initiatedName || devotee.legalName}
+                          </p>
+                          {devotee.initiatedName && (
+                            <p className="text-[11px] text-slate-500 truncate">Legal: {devotee.legalName}</p>
+                          )}
+                          <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
+                            <Building2 className="w-3 h-3 text-amber-500 shrink-0" />
+                            <span className="truncate">
+                              {devoteeCentre ? `${devoteeCentre.name} (${devoteeCentre.shortCode})` : 'Centre'}
+                            </span>
                           </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </div>
+                      </div>
+
+                      <Badge
+                        variant={
+                          devotee.profileType === 'STUDENT'
+                            ? 'amber'
+                            : devotee.profileType === 'WORKING_PROFESSIONAL'
+                            ? 'blue'
+                            : devotee.profileType === 'ALUMNI'
+                            ? 'purple'
+                            : 'slate'
+                        }
+                        size="sm"
+                      >
+                        {devotee.profileType?.replace('_', ' ')}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-600 pt-1 border-t border-slate-100">
+                      <span className="inline-flex items-center gap-1 font-medium text-slate-700 text-[11px]">
+                        <Sparkles className="w-3 h-3 text-amber-500" />
+                        {devotee.initiationStatus || 'UNINITIATED'}
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        {devotee.city || 'Location N/A'}
+                      </span>
+                    </div>
+
+                    <div className="pt-1">
+                      {canTakeAction ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedDevoteeId(devotee.id)}
+                          leftIcon={<Eye className="w-3.5 h-3.5 text-amber-600" />}
+                          className="w-full justify-center font-semibold"
+                        >
+                          Manage Profile
+                        </Button>
+                      ) : (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                            <Lock className="w-3 h-3 text-slate-400" />
+                            External Centre
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedDevoteeId(devotee.id)}
+                            leftIcon={<Eye className="w-3.5 h-3.5 text-slate-500" />}
+                            className="text-slate-600"
+                          >
+                            View Only
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
